@@ -10,7 +10,7 @@ const game = new Game(), canvas = $('arena'), renderer = new Renderer(canvas, ga
 const colors = { Q: '#83dcff', W: '#b49aff', E: '#ffb17f' }, symbols = { Q: '❄', W: 'ϟ', E: '♨' };
 const formatTime = t => `${Math.floor(t / 60).toString().padStart(2, '0')}:${Math.floor(t % 60).toString().padStart(2, '0')}`;
 let rightDown = false, lastState = '', modal = null, soundOn = false, audio, inventoryKey = '';
-let startingEquipment = 'blink';
+let startingEquipment = 'blink', shopPage = 0;
 function loadoutHTML() {
   return `<div class="loadout"><span class="eyebrow">选择初始装备 · 主动 / 被动共用单槽 · 免费携带一件</span><div class="loadout-options">${EQUIPMENT.map(item => `<button data-loadout="${item.id}" aria-pressed="${startingEquipment === item.id}" class="${startingEquipment === item.id ? 'selected' : ''}" style="--equipment:${item.color}" title="${item.desc}"><span>${item.icon}</span>${item.name}</button>`).join('')}</div><p>${equipmentById(startingEquipment).desc}<br>${equipmentById(startingEquipment).kind === 'passive' ? '被动持续生效' : `空格使用 · 冷却 ${equipmentById(startingEquipment).cd} 秒`} · 商店购买会替换旧装备</p></div>`;
 }
@@ -21,6 +21,7 @@ function tone(freq = 400) {
   try { audio ||= new AudioContext(); audio.resume(); const o = audio.createOscillator(), a = audio.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(freq, audio.currentTime); o.frequency.exponentialRampToValueAtTime(freq / 2, audio.currentTime + .2); a.gain.setValueAtTime(.06, audio.currentTime); a.gain.exponentialRampToValueAtTime(.001, audio.currentTime + .25); o.connect(a).connect(audio.destination); o.start(); o.stop(audio.currentTime + .26); } catch { /* Audio is optional. */ }
 }
 function updateHUD() {
+  document.querySelector('.training-tools').hidden = !game.training;
   const p = game.player, spell = resolveSpell(game.queue);
   $('timer').textContent = formatTime(game.time); $('kills').textContent = game.kills; $('gold').textContent = game.gold;
   $('wave-title').textContent = game.training ? '试炼场 · 角色免伤' : game.bossSpawned ? `第 ${game.run.round} / ${RUN_RULES.rounds} 轮 Boss · ${game.boss?.name || ''}` : `第 ${game.run.round} / ${RUN_RULES.rounds} 轮 · 路线 ${Math.min(RUN_RULES.nodesPerRound, game.run.completed + 1)} / ${RUN_RULES.nodesPerRound}`;
@@ -81,7 +82,7 @@ function renderOverlay() {
   else if (modal?.kind === 'spell') { const s = SPELLS.find(s => s.id === modal.id), rs = spellRelics(s.id, game.relics); html = `<span class="sigil" style="color:${s.color}">${s.icon}</span><span class="eyebrow">${s.en}</span><h2>${s.name}</h2><div class="combo" style="justify-content:center;font-size:18px">${combo(s.id)}</div><div class="spell-detail">${s.desc}<br>施法类型：${s.type}<br>标签：${s.tags.join(" / ")}<br>当前冷却：${game.spellStats(s).cooldown} 秒<br>当前施法次数：${game.spellStats(s).castCount}${s.range ? `<br>当前射程：${Math.round(game.spellStats(s).range)}` : ''}<br>输入此组合后按 R，三个元素的顺序不影响结果。${rs.map(r => `<div class="active-relic"><b style="color:${r.color}">${r.icon} ${r.name} · 已生效</b><br>${r.desc}</div>`).join('')}</div><button class="primary-button" data-action="close-modal">返回${modal.previous === 'playing' ? '战斗' : '远征'}</button>`; }
   else if (game.state === 'menu') html = `<span class="sigil">✧</span><span class="eyebrow">WEAVE YOUR OWN SURVIVAL</span><h2>以咒语，回应黑暗。</h2><p class="subtitle">踏入遗忘之庭，在涌来的怪潮中编织元素。<br>与小卡尔一起，挑战裂隙深处的领主。</p><div class="carl-intro"><img src="/assets/carl.svg" alt="小卡尔：白发、紫金法袍与三颗元素球"><div><span class="eyebrow">THE YOUNG INVOKER</span><h3>${HERO.name}</h3><p>${HERO.desc}</p><div class="carl-stats"><span>♡ 120 生命</span><span>✧ 十种咒语</span><span>◇ 遗物流派</span></div></div></div><button class="primary-button" data-action="start">开启远征 <span style="margin-left:20px">→</span></button><p class="dialog-footnote">右键移动 · Q / W / E 组合 · R 施法</p>${matchMedia('(pointer:coarse)').matches ? '<p class="mobile-warning">请使用键盘和鼠标游玩，触屏暂不支持战斗操作。</p>' : ''}`;
   else if (game.state === 'paused') html = `<span class="sigil">Ⅱ</span><span class="eyebrow">A MOMENT OF STILLNESS</span><h2>远征已暂停</h2><p class="subtitle">喘息片刻，重新编织你的下一道咒语。</p><div class="dialog-actions"><button class="primary-button" data-action="resume">继续战斗</button><button class="secondary-button" data-action="restart">重新开始</button></div><p class="dialog-footnote">按 ESC 继续</p>`;
-  else if (game.state === 'shop') html = shopHTML(game);
+  else if (game.state === 'shop') html = shopHTML(game, shopPage);
   else if (game.state === 'route') html = routeHTML(game);
   else if (game.state === 'event') html = eventHTML();
   else if (['dead', 'victory'].includes(game.state)) { const r = game.result; html = `<span class="sigil">${r.win ? '♜' : '◇'}</span><span class="eyebrow">${r.win ? 'THE RIFT IS SEALED' : 'EVERY END IS A BEGINNING'}</span><h2>${r.win ? '裂隙已封印' : '远征落幕'}</h2><p class="subtitle">${r.win ? '统帅倒下，遗忘之庭重归宁静。你的咒语值得被铭记。' : '黑暗暂时占据了上风。记住你的连招，再次踏入庭院。'}</p><div class="result-stats"><span><b>${formatTime(r.time)}</b><small>存活时间</small></span><span><b>${r.kills}</b><small>击败敌人</small></span><span><b>${r.casts}</b><small>施放法术</small></span><span><b>${r.gold}</b><small>收集金币</small></span></div><div class="dialog-actions"><button class="primary-button" data-action="start">再来一局 →</button><button class="secondary-button" data-action="restart">返回营地</button></div>`; }
@@ -98,6 +99,7 @@ function renderOverlay() {
 function openModal(kind, id) { if (modal) return; const previous = game.state; if (previous === 'playing') game.pause(); modal = { kind, id, previous }; rightDown = false; updateHUD(); renderOverlay(); }
 function closeModal() { const previous = modal?.previous; modal = null; if (previous === 'playing' && game.state === 'paused') game.pause(); renderOverlay(); updateHUD(); }
 document.addEventListener('click', e => {
+  if (e.target.closest('.training-tools button')) document.querySelector('.training-tools').open = false;
   const route = e.target.closest('[data-route]'); if (route) { game.chooseRoute(route.dataset.route); updateHUD(); return; }
   const event = e.target.closest('[data-event]'); if (event) { game.resolveEvent(event.dataset.event); updateHUD(); return; }
   const loadout = e.target.closest('[data-loadout]'); if (loadout) { startingEquipment = loadout.dataset.loadout; renderOverlay(); return; }
@@ -105,6 +107,7 @@ document.addEventListener('click', e => {
   const spell = e.target.closest('[data-spell]'); if (spell) { openModal('spell', spell.dataset.spell); return; }
   const buy = e.target.closest('[data-buy]'); if (buy) { if (game.buy(buy.dataset.buy)) tone(660); renderOverlay(); updateHUD(); return; }
   const action = e.target.closest('[data-action]')?.dataset.action;
+  if (action === 'shop-prev' || action === 'shop-next') { shopPage += action === 'shop-next' ? 1 : -1; renderOverlay(); return; }
   if (action === 'start') { modal = null; game.start(false, startingEquipment); tone(530); canvas.focus(); }
   if (action === 'training') { modal = null; game.start(true, startingEquipment); tone(530); canvas.focus(); game.message('遗物试炼 · 角色免伤，点击「试炼补给」体验强化和主动装备'); }
   if (action === 'resume') game.pause();
@@ -120,7 +123,7 @@ $('training-boss').onclick = () => { game.trainingBoss(); updateHUD(); canvas.fo
 $('training-timber').onclick = () => { game.trainingBoss('timber'); updateHUD(); canvas.focus(); };
 $('training-enrage').onclick = () => { if (game.training && game.state === 'playing' && game.boss?.hp > 0) game.boss.hp = Math.min(game.boss.hp, game.boss.maxHp * .5); updateHUD(); canvas.focus(); };
 $('training-squad').onclick = () => { game.trainingSquad(); updateHUD(); canvas.focus(); };
-$('training-shop').onclick = () => { rightDown = false; game.trainingShop(); updateHUD(); };
+$('training-shop').onclick = () => { rightDown = false; shopPage = 0; game.trainingShop(); updateHUD(); };
 $('pause-button').onclick = () => { game.pause(); updateHUD(); };
 $('sound-button').onclick = () => { soundOn = !soundOn; $('sound-button').textContent = soundOn ? '♫' : '♩'; $('sound-button').setAttribute('aria-label', soundOn ? '关闭音效' : '开启音效'); tone(540); };
 window.addEventListener('keydown', e => {

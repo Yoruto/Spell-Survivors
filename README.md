@@ -84,11 +84,15 @@ node scripts/server.mjs --dist # 本地预览构建结果
 | 输出目录 | `dist` |
 | Node.js | 20 或更新版本 |
 
-Git 部署前，必须将 `index.html`、`style.css`、`src/`、`assets/`、`scripts/`、`package.json` 和 `edgeone.json` 提交并推送到 EdgeOne 关联的分支。只在本机生成文件或提交设计文档，云端无法取得游戏入口。`dist/` 是生成目录，不需要提交，平台构建时会生成。
+Git 部署前，必须将 `index.html`、`style.css`、`layout.css`、`src/`、`assets/`、`scripts/`、`package.json` 和 `edgeone.json` 提交并推送到 EdgeOne 关联的分支。只在本机生成文件或提交设计文档，云端无法取得游戏入口。`dist/` 是生成目录，不需要提交，平台构建时会生成。
 
 推送后在 EdgeOne 部署记录中确认构建成功，且部署提交包含以上文件，再从该记录重新打开预览链接。预览链接带鉴权参数时应完整复制；失效后从控制台获取新链接。直接上传部署则上传 `dist/` 的内容，确保上传根目录直接包含 `index.html`。
 
 若出现平台的 `404 NOT_FOUND / The site does not exist`，先核对控制台当前部署域名；这表示平台没有找到对应站点，不能仅凭此错误认定是游戏 JavaScript 故障。若正确的新链接仍报错，检查项目域名状态和部署记录。参考 [官方错误码说明](https://pages.edgeone.ai/document/error-codes) 与 [部署排查指南](https://pages.edgeone.ai/document/troubleshooting)。
+
+## 单屏布局
+
+界面按窗口高度分配空间，战场占据主区域，生命、装备与元素施法合并为底部控制栏。左侧同时显示十个法术与遗物，试炼操作收纳在顶部「试炼工具」。页面、营地、技能说明和商店均无需滚动；试炼补给以翻页浏览全部商品。商品长说明保留在鼠标悬停提示中。布局规则位于 `layout.css`，构建时会一并复制到 `dist/`。
 
 ## 操作
 

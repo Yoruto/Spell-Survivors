@@ -84,7 +84,12 @@ test('depleted relic pool shows remaining candidates without duplicates; trainin
   assert.equal(g.shop.stock.filter(id => RELICS.some(item => item.id === id)).length, 1);
   g.bought.push(RELICS[0].id); g.relics = [...g.bought]; g.shop.open(g);
   assert.match(shopHTML(g), /未拥有遗物已全部收集/); assert.ok(g.refreshShop());
-  g.start(true); g.trainingShop(); const html = shopHTML(g);
+  g.start(true); g.trainingShop();
+  const pages = Array.from({ length: 4 }, (_, page) => shopHTML(g, page));
+  const html = pages.join('');
+  for (const page of pages) assert.ok((page.match(/<article /g) || []).length <= 9);
+  assert.match(pages[0], /data-action="shop-prev" disabled/);
+  assert.match(pages.at(-1), /data-action="shop-next" disabled/);
   for (const item of [...ATTRIBUTES, ...RELICS, ...EQUIPMENT]) assert.ok(html.includes(`data-buy="${item.id}"`));
   const gold = g.gold; assert.equal(g.refreshShop(), false); assert.equal(g.gold, gold);
 });
