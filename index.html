@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101917"><title>咒语幸存者 · Spell Survivors</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="咒语幸存者首页"><span class="brand-mark">✧</span><span>咒语幸存者<small>SPELL SURVIVORS</small></span></a>
+      <div class="chapter"><span class="live-dot"></span>裂隙远征<span class="slash">/</span><span class="muted">遗忘之庭</span><span class="tag">原型 v0.5</span></div>
+      <div class="header-actions"><button id="sound-button" class="icon-button" title="切换音效" aria-label="开启音效">♫</button><button id="help-button" class="outline-button">操作指南 <kbd>H</kbd></button><button id="pause-button" class="outline-button">暂停 <kbd>ESC</kbd></button></div>
+    </header>
+    <main class="workspace">
+      <aside class="spell-panel">
+        <div class="panel-title"><div><span class="eyebrow">THE SPELLBOOK</span><h2>元素秘典</h2></div><span class="count">10</span></div>
+        <p class="panel-intro">以三种元素，编织十种可能。</p>
+        <div class="element-legend"><span><i class="ice">Q</i> 冰</span><span><i class="storm">W</i> 雷</span><span><i class="fire">E</i> 火</span></div>
+        <div class="spell-list" id="spell-list"></div>
+        <div class="spell-note"><span>◇</span><p>所有咒语已掌握<br><small>顺序无关 · 独立冷却</small></p></div>
+      </aside>
+      <section class="battle-column">
+        <div class="battle-heading"><div><span class="eyebrow">THE FORGOTTEN COURT</span><h1>遗忘之庭 <span>第一章</span></h1></div><div class="run-stats"><span>◷ <b id="timer">00:00</b></span><span>⚔ <b id="kills">0</b><small>击败</small></span><span class="gold">◇ <b id="gold">0</b></span></div></div>
+        <div class="arena-shell" id="arena-shell">
+          <canvas id="arena" tabindex="0" aria-label="游戏战场：按住鼠标右键移动，Q W E 输入元素，R 施法，空格使用当前装备"></canvas>
+          <div class="arena-top"><div class="wave-pill"><span class="live-dot"></span><span id="wave-title">第 1 / 2 轮 · 路线 1 / 5</span></div><div class="arena-place">◇ 遗忘之庭 <span>·</span> 危险区域</div></div>
+          <div class="wave-progress"><div id="wave-progress"></div></div>
+          <div id="boss-hud" class="boss-hud" hidden><div><span id="boss-name">斧王 · 赤斧统帅</span><small id="boss-health-text"></small></div><div class="boss-track"><div id="boss-health"></div></div><div class="boss-mana-label"><span id="boss-ultimate">大招蓄能</span><span id="boss-mana-text">0 / 100</span></div><div id="boss-mana-track" class="boss-mana-track" role="progressbar" aria-label="Boss 大招蓄能" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="boss-mana"></div></div><small id="boss-status">满蓝释放大招 · EMP 可削减蓄能</small></div>
+          <div class="arena-coordinate">SECTOR 07 <span>✧</span> ARCANE RIFT</div>
+          <div id="status-buffs" class="status-buffs"></div>
+          <div id="toast" class="toast" role="status" aria-live="polite"></div>
+          <div id="overlay" class="overlay"></div>
+        </div>
+        <div class="player-bar"><div class="portrait" id="portrait"><img src="/assets/carl.svg" alt="小卡尔头像"></div><div class="player-health"><div class="health-label"><span id="player-name">小卡尔</span><span id="hp-text">120 / 120</span></div><div class="health-track"><div id="hp-fill"></div></div></div><div class="player-meta"><span>♜ <b id="spirit-count">0 / 1</b><small>熔炉精灵</small></span><span>✧ <b id="power">100%</b><small>法术强度</small></span></div></div>
+        <div class="equipment-belt"><button id="equipment-slot" class="equipment-slot" aria-label="使用当前装备"><span id="equipment-icon" class="equipment-icon">◇</span><span class="equipment-copy"><b id="equipment-name">装备槽</b><small id="equipment-state">出战前选择一件装备</small></span><kbd>SPACE</kbd><span class="equipment-track"><span id="equipment-progress"></span></span></button><p>主动 / 被动 · 单槽位<br><small>营地选择 / 购买替换</small></p></div><div class="relic-belt"><span class="eyebrow">遗物收藏 <b id="relic-count">0</b></span><div id="relic-inventory"><small>在阶段商店中选择遗物，改变咒语形态</small></div><button id="training-boss" class="outline-button" hidden>召唤试炼 Boss</button><button id="training-timber" class="outline-button" hidden>召唤伐木机</button><button id="training-enrage" class="outline-button" hidden>测试半血狂暴</button><button id="training-squad" class="outline-button" hidden>召唤小兵小队</button><button id="training-shop" class="outline-button" hidden>试炼补给</button></div>
+        <div class="casting-panel"><div class="casting-label"><span class="eyebrow">ELEMENT WEAVING</span><h3>编织咒语</h3><small>输入 Q / W / E</small></div><div class="orb-slots" id="orb-slots"></div><div class="casting-arrow">→</div><div class="current-spell"><span id="current-icon">✧</span><div><b id="current-name">等待元素</b><small id="current-description">三个元素，唤醒你的力量</small></div></div><div class="cast-key"><kbd>R</kbd><small>施放咒语</small></div></div>
+        <footer class="controls-footer"><span><b>鼠标右键</b> 移动 <i>·</i> <b>Q W E</b> 组合元素 <i>·</i> <b>R</b> 施法 <i>·</i> <b>空格</b> 装备</span><span>挑战斧王与伐木机。 <span class="mint">✧</span></span></footer>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body></html>
